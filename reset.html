@@ -5,63 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Lab - Reset Password</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        h2 { color: #03A9F4; margin-bottom: 20px; }
-        button { width: 100%; padding: 12px; background-color: #03A9F4; border: none; border-radius: 6px; color: white; font-size: 16px; cursor: pointer; font-weight: bold; }
-        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        #message { margin-top: 20px; font-size: 14px; font-weight: bold; }
+        body { font-family: sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #03A9F4; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #msg { margin-top: 15px; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="card">
         <h2>My Lab</h2>
-        <p>Enter your new password below.</p>
-        <input type="password" id="newPassword" placeholder="New password">
-        <button onclick="updatePassword()">Update Password</button>
-        <div id="message"></div>
+        <p>Set your new password</p>
+        <input type="password" id="pass" placeholder="New Password">
+        <button onclick="save()">Update Password</button>
+        <div id="msg"></div>
     </div>
 
     <script>
-        async function updatePassword() {
-            const password = document.getElementById('newPassword').value;
-            const messageDiv = document.getElementById('message');
+        async function save() {
+            const password = document.getElementById('pass').value;
+            const msg = document.getElementById('msg');
             
-            // قراءة التوكن من علامة الاستفهام (?) وليس الهاش (#)
-            const urlParams = new URLSearchParams(window.location.search);
-            const accessToken = urlParams.get('access_token');
+            // 1. التقاط التوكن الطويل (JWT) من الرابط بعد علامة الهاش #
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const token = params.get('access_token');
 
-            if (!accessToken) {
-                messageDiv.style.color = "red";
-                messageDiv.innerText = "Error: Token is missing from the link!";
+            if (!token) {
+                msg.style.color = "red";
+                msg.innerText = "Error: Invalid link or missing token.";
                 return;
             }
 
-            messageDiv.style.color = "#03A9F4";
-            messageDiv.innerText = "Updating...";
+            msg.style.color = "#03A9F4";
+            msg.innerText = "Updating...";
 
+            // 2. إرسال التحديث لـ Supabase
             try {
-                const response = await fetch('https://kdielzqdpobisvmbyqod.supabase.co/auth/v1/user', {
+                const res = await fetch('https://kdielzqdpobisvmbyqod.supabase.co/auth/v1/user', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'apikey': 'sb_publishable_aYmQQFkiAuMXSF_Dl2C25g_tDvOJ5-p',
-                        'Authorization': `Bearer ${accessToken}`
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ password: password })
                 });
 
-                const data = await response.json();
-                if (response.ok) {
-                    messageDiv.style.color = "green";
-                    messageDiv.innerText = "Success! Password updated.";
+                if (res.ok) {
+                    msg.style.color = "green";
+                    msg.innerText = "Success! Password updated.";
                 } else {
-                    messageDiv.style.color = "red";
-                    messageDiv.innerText = "Error: " + (data.msg || "Link expired");
+                    const data = await res.json();
+                    msg.style.color = "red";
+                    msg.innerText = "Error: " + (data.msg || "Failed to update.");
                 }
             } catch (e) {
-                messageDiv.style.color = "red";
-                messageDiv.innerText = "Network Error.";
+                msg.innerText = "Network Error.";
             }
         }
     </script>
